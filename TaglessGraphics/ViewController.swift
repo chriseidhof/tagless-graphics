@@ -106,6 +106,14 @@ extension Shadow {
     }
 }
 
+// Here's our abstract drawing. It now also requires the Shadow capability.
+func sample2<D: Drawing & Shadow>() -> D {
+    return .combined([
+        .shadow(.ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red)),
+        .rectangle(CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), fill: .blue)
+        ])
+}
+
 // We can't make Core Graphics conform (without manually drawing the shadow), but we *can* make Core Animation conform:
 extension CoreAnimation: Shadow {
     static func shadow(opacity: CGFloat, offset: CGSize, radius: CGFloat, _ child: CoreAnimation) -> CoreAnimation {
@@ -117,14 +125,6 @@ extension CoreAnimation: Shadow {
             return layer
         }
     }
-}
-
-// Here's our abstract drawing. It now also requires the Shadow capability.
-func sample2<D: Drawing & Shadow>() -> D {
-    return .combined([
-        .shadow(.ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red)),
-        .rectangle(CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), fill: .blue)
-        ])
 }
 
 class ViewController: UIViewController {
