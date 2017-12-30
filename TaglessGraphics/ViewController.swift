@@ -6,29 +6,9 @@
 //  Copyright © 2017 objc.io. All rights reserved.
 //
 
-//extension CGRect {
-//    func divide(axis: UILayoutConstraintAxis, count: Int) -> [CGRect] {
-//        switch axis {
-//        case .horizontal:
-//            let itemHeight = size.width / CGFloat(count)
-//            let itemSize = CGSize(width: itemHeight, height: size.height)
-//            return (0..<count).map {
-//                CGRect(origin: CGPoint(x: origin.x + CGFloat($0) * itemHeight, y: origin.y),
-//                       size: itemSize)
-//            }
-//        case .vertical:
-//            let itemHeight = size.height / CGFloat(count)
-//            let itemSize = CGSize(width: size.width, height: itemHeight)
-//            return (0..<count).map {
-//                CGRect(origin: CGPoint(x: origin.x, y: origin.y + CGFloat($0) * itemHeight),
-//                       size: itemSize)
-//            }
-//        }
-//    }
-//}
-
-
 import UIKit
+
+// Let's say we want to create some drawings. Instead of a concrete representation, we'll create a protocol:
 
 protocol Drawing {
     static func rectangle(_ rect: CGRect, fill: UIColor) -> Self
@@ -36,6 +16,7 @@ protocol Drawing {
     static func combined(_ layers: [Self]) -> Self
 }
 
+// We can draw in a CGContext:
 struct CGraphics {
     let draw: (CGContext) -> ()
 }
@@ -68,6 +49,7 @@ extension CGraphics: Drawing {
     }
 }
 
+// Alternatively, we could draw using CoreAnimation. This simple wrapper struct is necessary.
 struct CoreAnimation {
     let render: () -> CALayer
 }
@@ -103,6 +85,8 @@ extension CoreAnimation: Drawing {
     }
 }
 
+// Here is a sample drawing:
+
 func sample<D: Drawing>() -> D {
     return .combined([
         .ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red),
@@ -110,6 +94,7 @@ func sample<D: Drawing>() -> D {
     ])
 }
 
+// Let's say we want to have drawings with drop shadows. We'll create a separate protocol:
 protocol Shadow {
     static func shadow(opacity: CGFloat, offset: CGSize, radius: CGFloat, _ child: Self) -> Self
 }
@@ -121,6 +106,7 @@ extension Shadow {
     }
 }
 
+// We can't make Core Graphics conform (without manually drawing the shadow), but we *can* make Core Animation conform:
 extension CoreAnimation: Shadow {
     static func shadow(opacity: CGFloat, offset: CGSize, radius: CGFloat, _ child: CoreAnimation) -> CoreAnimation {
         return CoreAnimation {
@@ -133,6 +119,7 @@ extension CoreAnimation: Shadow {
     }
 }
 
+// Here's our abstract drawing. It now also requires the Shadow capability.
 func sample2<D: Drawing & Shadow>() -> D {
     return .combined([
         .shadow(.ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red)),
