@@ -14,6 +14,7 @@ protocol Drawing {
     static func rectangle(_ rect: CGRect, fill: UIColor) -> Self
     static func ellipse(in rect: CGRect, fill: UIColor) -> Self
     static func combined(_ layers: [Self]) -> Self
+    static func alpha(_ alpha: CGFloat, _ child: Self) -> Self
 }
 
 // We can draw in a CGContext:
@@ -21,23 +22,30 @@ struct CGraphics {
     let draw: (CGContext) -> ()
 }
 
+extension CGContext {
+    func saveAndRestore(_ f: () -> ()) {
+        saveGState()
+        f()
+        restoreGState()
+    }
+}
 
 extension CGraphics: Drawing {
     static func rectangle(_ rect: CGRect, fill: UIColor) -> CGraphics {
         return CGraphics { context in
-            context.saveGState()
-            context.setFillColor(fill.cgColor)
-            context.fill(rect)
-            context.restoreGState()
+            context.saveAndRestore {
+                context.setFillColor(fill.cgColor)
+                context.fill(rect)
+            }
         }
     }
     
     static func ellipse(in rect: CGRect, fill: UIColor) -> CGraphics {
         return CGraphics { context in
-            context.saveGState()
-            context.setFillColor(fill.cgColor)
-            context.fillEllipse(in: rect)
-            context.restoreGState()
+            context.saveAndRestore {
+                context.setFillColor(fill.cgColor)
+                context.fillEllipse(in: rect)
+            }
         }
 
     }
@@ -45,6 +53,15 @@ extension CGraphics: Drawing {
     static func combined(_ layers: [CGraphics]) -> CGraphics {
         return CGraphics { context in
             layers.forEach { $0.draw(context) }
+        }
+    }
+    
+    static func alpha(_ alpha: CGFloat, _ child: CGraphics) -> CGraphics {
+        return CGraphics { context in
+            context.saveAndRestore {
+                context.setAlpha(alpha)
+                child.draw(context)
+            }
         }
     }
 }
@@ -80,6 +97,14 @@ extension CoreAnimation: Drawing {
             for c in layers {
                 result.addSublayer(c.render())
             }
+            return result
+        }
+    }
+    
+    static func alpha(_ alpha: CGFloat, _ child: CoreAnimation) -> CoreAnimation {
+        return CoreAnimation {
+            let result = child.render()
+            result.opacity = Float(alpha)
             return result
         }
     }
@@ -154,7 +179,7 @@ extension CGraphics: Gradient {
 func sample2<D: Drawing & Gradient>() -> D {
     return .combined([
         .ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red),
-        .gradient(in: CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 1, y: 1), colors: [UIColor.red, .green, .blue, .cyan])
+        .alpha(0.7, .gradient(in: CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 1, y: 1), colors: [UIColor.red, .green, .blue, .cyan]))
         ])
 }
 
@@ -163,7 +188,7 @@ func sample2<D: Drawing & Gradient>() -> D {
 func sample3<D: Drawing & Shadow & Gradient>() -> D {
     return .combined([
         .shadow(.ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red)),
-        .gradient(in: CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 1, y: 1), colors: [UIColor.red, .green, .blue, .cyan])
+        .alpha(0.7, .gradient(in: CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 1, y: 1), colors: [UIColor.red, .green, .blue, .cyan]))
         ])
 }
 
