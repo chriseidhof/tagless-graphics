@@ -356,6 +356,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = SL7736T2Z4;
 				INFOPLIST_FILE = TaglessGraphics/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = io.objc.versions.TaglessGraphics;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -371,6 +372,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = SL7736T2Z4;
 				INFOPLIST_FILE = TaglessGraphics/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = io.objc.versions.TaglessGraphics;
 				PRODUCT_NAME = "$(TARGET_NAME)";
