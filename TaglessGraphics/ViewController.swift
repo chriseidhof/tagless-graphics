@@ -106,11 +106,64 @@ extension Shadow {
     }
 }
 
+protocol Gradient {
+    // start point and end point are in the unit coordinate space
+    static func gradient(in: CGRect, startPoint: CGPoint, endPoint: CGPoint, colors: [UIColor]) -> Self
+}
+
+extension CoreAnimation: Gradient {
+    static func gradient(in frame: CGRect, startPoint: CGPoint, endPoint: CGPoint,
+        colors: [UIColor]) -> CoreAnimation {
+        return CoreAnimation {
+            let result = CAGradientLayer()
+            result.frame = frame
+            result.startPoint = startPoint
+            result.endPoint = endPoint
+            result.colors = colors.map { $0.cgColor }
+            return result
+        }
+    }
+}
+
+extension CGRect {
+    func unitToAbsolute(point: CGPoint) -> CGPoint {
+        return CGPoint(x: origin.x + width*point.x, y: origin.y + height*point.y)
+    }
+}
+
+extension CGraphics: Gradient {
+    static func gradient(in rect: CGRect, startPoint: CGPoint, endPoint: CGPoint, colors: [UIColor]) -> CGraphics {
+        assert(colors.count > 1)
+        let cgColors = colors.map { $0.cgColor } as CFArray
+        let locationOffset = CGFloat(1) / CGFloat(colors.count-1)
+        let locations = (0..<colors.count).map { CGFloat($0) * locationOffset }
+        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: cgColors, locations: locations)!
+        let start = rect.unitToAbsolute(point: startPoint)
+        let end = rect.unitToAbsolute(point: endPoint)
+        return CGraphics { context in
+            context.saveGState()
+            context.clip(to: rect)
+            context.drawLinearGradient(gradient, start: start, end: end, options: [])
+            context.restoreGState()
+        }
+    }
+    
+    
+}
+
+func sample2<D: Drawing & Gradient>() -> D {
+    return .combined([
+        .ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red),
+        .gradient(in: CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 1, y: 1), colors: [UIColor.red, .green, .blue, .cyan])
+        ])
+}
+
+
 // Here's our abstract drawing. It now also requires the Shadow capability.
-func sample2<D: Drawing & Shadow>() -> D {
+func sample3<D: Drawing & Shadow & Gradient>() -> D {
     return .combined([
         .shadow(.ellipse(in: CGRect(origin: .zero, size: CGSize(width: 100, height: 100)), fill: .red)),
-        .rectangle(CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), fill: .blue)
+        .gradient(in: CGRect(origin: CGPoint(x: 50, y: 50), size: CGSize(width: 100, height: 100)), startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: 1, y: 1), colors: [UIColor.red, .green, .blue, .cyan])
         ])
 }
 
@@ -138,7 +191,7 @@ class ViewController: UIViewController {
         iv.frame = view.bounds
         let renderer = UIGraphicsImageRenderer(bounds: view.bounds)
         iv.image = renderer.image { context in
-            let drawing: CGraphics = sample()
+            let drawing: CGraphics = sample2()
             drawing.draw(context.cgContext)
         }        
     }
@@ -146,7 +199,7 @@ class ViewController: UIViewController {
 
 class CAViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
-        let drawing: CoreAnimation = sample2()
+        let drawing: CoreAnimation = sample3()
         view.layer.addSublayer(drawing.render())
     }
 }
